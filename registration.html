@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yuvajana Sakhyam Registration</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-title {
+            text-align: center;
+            font-weight: bold;
+            color: #c59d5f;
+        }
+        .btn-custom {
+            background-color: #0099ff;
+            color: white;
+        }
+        .btn-custom:hover {
+            background-color: #007acc;
+        }
+    </style>
+</head>
+<body>
+    <form action="register.php" method="POST">
+    <div class="container">
+        <h2 class="form-title">Mar Thoma Yuvajana Sakhyam Registration</h2>
+        <form id="registrationForm">
+           
+            
+            <div class="mb-3">
+                <label for="name" class="form-label">Name of applicant <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="name" name="name" placeholder="Enter your Applicant Name" required>
+            </div>
+            <!-- Email -->
+            <div class="mb-3">
+                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                <input type="email" class="form-control" id="email" placeholder="Enter your email" required>
+            </div>
+
+            <!-- Phone -->
+            <div class="mb-3">
+                <label for="phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
+                <input type="tel" class="form-control" id="phone" placeholder="Enter your phone number" required>
+            </div>
+
+            
+
+            <!-- Parish Name -->
+            <div class="mb-3">
+                <label for="parish" class="form-label">Parish Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="parish" placeholder="Enter your Parish name" required>
+            </div>
+
+            <!-- Address -->
+            <div class="mb-3">
+                <label for="address" class="form-label">Church Address</label>
+                <textarea class="form-control" id="address" rows="3" placeholder="Enter your  church address"></textarea>
+            </div>
+            <div class="mb-3">
+                <label for="fileUpload" class="form-label">Upload Supporting Document (PDF/DOC)</label>
+                <input type="file" class="form-control" id="fileUpload" accept=".pdf,.doc,.docx" required>
+                <small class="text-muted">Only PDF, DOC, and DOCX files are allowed.</small>
+            </div>
+            <div class="mb-3">
+                <label for="members" class="form-label">Total Members <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" id="members" placeholder="Enter number of members" min="1" required oninput="calculateAmount()">
+            </div>
+            <!-- Amount Payable (Auto-Calculated) -->
+            <div class="mb-3">
+                <label for="amount" class="form-label">Amount Payable (₹)</label>
+                <input type="text" class="form-control" id="amount" readonly>
+            </div>
+             <!-- Pay Button -->
+             <div class="text-center">
+                <button type="button" class="btn btn-custom" onclick="makePayment()">Proceed to Pay</button>
+            </div>
+            <!-- Submit Button -->
+            <div class="text-center">
+                <button type="submit" class="btn btn-custom">Register</button>
+            </div>
+
+        </form>
+    </div>
+    </form>
+
+    <script>
+        function calculateAmount() {
+            let members = document.getElementById("members").value;
+            let feePerMember = 10; // Charge per member
+            let totalAmount = 300+members * feePerMember;
+
+            if (!isNaN(totalAmount) && members > 0) {
+                document.getElementById("amount").value = totalAmount;
+            } else {
+                document.getElementById("amount").value = "";
+            }
+        }
+
+        function makePayment() {
+        let name = document.getElementById("name").value;
+        let email = document.getElementById("email").value;
+        let phone = document.getElementById("phone").value;
+        let dob = document.getElementById("dob").value;
+        let parish = document.getElementById("parish").value;
+        let address = document.getElementById("address").value;
+        let members = document.getElementById("members").value;
+        let amount = document.getElementById("amount").value * 100; // Convert to paise
+
+        if (!name || !email || !phone || !dob || !parish || !members || !amount) {
+            alert("Please fill all details.");
+            return;
+        }
+
+        var options = {
+            "key": "YOUR_RAZORPAY_KEY_ID", // Replace with Razorpay Key
+            "amount": amount,
+            "currency": "INR",
+            "name": "Yuvajana Sakhyam",
+            "description": "Membership Payment",
+            "handler": function (response) {
+                alert("Payment Successful! Payment ID: " + response.razorpay_payment_id);
+
+                // Send Data to PHP for Registration
+                let formData = new FormData();
+                formData.append("name", name);
+                formData.append("email", email);
+                formData.append("phone", phone);
+                formData.append("dob", dob);
+                formData.append("parish", parish);
+                formData.append("address", address);
+                formData.append("members", members);
+                formData.append("amount", amount / 100); // Convert back to INR
+                formData.append("payment_id", response.razorpay_payment_id);
+
+                fetch("register.php", {
+                    method: "POST",
+                    body: formData
+                })
+                .then(res => res.text())
+                .then(data => {
+                    alert(data);
+                    document.getElementById("registrationForm").reset();
+                })
+                .catch(err => console.log(err));
+            },
+            "prefill": {
+                "name": name,
+                "email": email,
+                "contact": phone
+            },
+            "theme": {
+                "color": "#0099ff"
+            }
+        };
+
+        var rzp1 = new Razorpay(options);
+        rzp1.open();
+    }
+    </script>
+
+</body>
+</html>
